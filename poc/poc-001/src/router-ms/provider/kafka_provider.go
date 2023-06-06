@@ -15,9 +15,10 @@ func NewKafkaProvider() *kafkaProvider {
 	// Kafka writer setup
 	w := &kafka.Writer{
 		Addr:     kafka.TCP("localhost:9092"),
-		Topic:    "kafka-topic",
+		Topic:    "my-topic",
 		Balancer: &kafka.LeastBytes{},
 	}
+
 	return &kafkaProvider{
 		KafkaSrv: w,
 	}
@@ -35,6 +36,6 @@ func (ks *kafkaProvider) Send(c *fiber.Ctx) error {
 	})
 
 	return c.JSON(fiber.Map{
-		"message": "Message sent successfully",
+		"message": "Kafka Message sent successfully",
 	})
 }

@@ -10,6 +10,11 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const (
+	topic          = "message-log"
+	broker1Address = "localhost:9092"
+)
+
 func main() {
 	//app := fiber.New()
 
@@ -26,18 +31,20 @@ func main() {
 
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{"localhost:9092"},
-		Topic:    "kafka-topic",
+		Topic:    "my-topic",
 		MinBytes: 10e3, // 10KB
 		MaxBytes: 10e6, // 10MB
 	})
 
-	for {
-		m, err := r.ReadMessage(context.Background())
-		if err != nil {
-			break
+	go func() {
+		for {
+			m, err := r.ReadMessage(context.Background())
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 		}
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-	}
+	}()
 
 	// Create a RabbitMQ connection
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
@@ -73,5 +80,24 @@ func main() {
 
 	// Keep the connection alive
 
-	r.Close()
+}
+
+func consume(ctx context.Context) {
+	// initialize a new reader with the brokers and topic
+	// the groupID identifies the consumer and prevents
+	// it from receiving duplicate messages
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: []string{broker1Address},
+		Topic:   topic,
+		GroupID: "my-group",
+	})
+	for {
+		// the `ReadMessage` method blocks until we receive the next event
+		msg, err := r.ReadMessage(ctx)
+		if err != nil {
+			panic("could not read message " + err.Error())
+		}
+		// after receiving the message, log its value
+		fmt.Println("received: ", string(msg.Value))
+	}
 }
