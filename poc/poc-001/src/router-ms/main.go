@@ -10,24 +10,17 @@ import (
 
 func main() {
 	app := fiber.New()
-	//nc, _ := nats.Connect(nats.DefaultURL)
+	// NATS
 	ns := provider.NewNatsProvider()
-	/*
-		app.Post("/mats/send", func(c *fiber.Ctx) error {
-			m := new(Message)
-			if err := c.BodyParser(m); err != nil {
-				return err
-			}
+	app.Post("/nats/send", ns.Send)
 
-			// Simple Publisher
-			nc.Publish("updates", []byte(m.Message))
+	// KAFKA
+	ks := provider.NewKafkaProvider()
+	app.Post("/kafka/send", ks.Send)
 
-			return c.JSON(fiber.Map{
-				"message": "Message sent successfully",
-			})
-		})
-	*/
-	app.Post("/mats/send", ns.Send)
+	// RABBIT
+	rbs := provider.NewRabbitMQProvider()
+	app.Post("/rabbitmq/send", rbs.Send)
 
 	log.Fatal(app.Listen(":3000"))
 }
